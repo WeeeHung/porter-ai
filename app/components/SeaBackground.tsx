@@ -21,6 +21,28 @@ export function SeaBackground() {
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
+    // Determine if it's day or night based on local time
+    const isDaytime = () => {
+      const hour = new Date().getHours();
+      return hour >= 6 && hour < 18; // Day is 6 AM to 6 PM
+    };
+
+    // Generate random stars for night sky
+    const generateStars = (count: number) => {
+      const stars: Array<{ x: number; y: number; size: number; twinklePhase: number }> = [];
+      for (let i = 0; i < count; i++) {
+        stars.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * (canvas.height / 2), // Only in top half
+          size: Math.random() * 2 + 0.5,
+          twinklePhase: Math.random() * Math.PI * 2,
+        });
+      }
+      return stars;
+    };
+
+    const stars = generateStars(150);
+
     // Animation variables
     let animationId: number;
     let time = 0;
@@ -56,14 +78,14 @@ export function SeaBackground() {
       direction: 'left' | 'right';
     }> = [
       // Ships starting from far left (moving right →)
-      { x: -150, y: 0.25, size: 120, speed: 0.15, type: 'container', direction: 'right' },
-      { x: -600, y: 0.45, size: 140, speed: 0.18, type: 'container', direction: 'right' },
-      { x: -900, y: 0.70, size: 110, speed: 0.13, type: 'cargo', direction: 'right' },
+      { x: -150, y: 0.625, size: 120, speed: 0.15, type: 'container', direction: 'right' },
+      { x: -600, y: 0.725, size: 140, speed: 0.18, type: 'container', direction: 'right' },
+      { x: -900, y: 0.85, size: 110, speed: 0.13, type: 'cargo', direction: 'right' },
       
       // Ships starting from far right (moving left ←)
-      { x: canvas.width + 400, y: 0.35, size: 100, speed: 0.12, type: 'cargo', direction: 'left' },
-      { x: canvas.width + 700, y: 0.55, size: 130, speed: 0.16, type: 'container', direction: 'left' },
-      { x: canvas.width + 1000, y: 0.75, size: 115, speed: 0.14, type: 'cargo', direction: 'left' },
+      { x: canvas.width + 400, y: 0.675, size: 100, speed: 0.12, type: 'cargo', direction: 'left' },
+      { x: canvas.width + 700, y: 0.775, size: 130, speed: 0.16, type: 'container', direction: 'left' },
+      { x: canvas.width + 1000, y: 0.875, size: 115, speed: 0.14, type: 'cargo', direction: 'left' },
     ];
 
     const animate = () => {
@@ -72,15 +94,47 @@ export function SeaBackground() {
       // Clear canvas
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Draw sea gradient
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#1e3a8a');
-      gradient.addColorStop(0.5, '#3282b8');
-      gradient.addColorStop(1, '#0f4c75');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const horizonY = canvas.height / 2;
+      const isDay = isDaytime();
 
-      // Draw waves
+      // Draw sky (top half)
+      if (isDay) {
+        // Daytime sky - light blue gradient
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, horizonY);
+        skyGradient.addColorStop(0, '#87CEEB'); // Sky blue
+        skyGradient.addColorStop(1, '#B0E0E6'); // Powder blue
+        ctx.fillStyle = skyGradient;
+      } else {
+        // Nighttime sky - dark gradient
+        const skyGradient = ctx.createLinearGradient(0, 0, 0, horizonY);
+        skyGradient.addColorStop(0, '#0a0e27'); // Very dark blue
+        skyGradient.addColorStop(1, '#1a1f3a'); // Dark blue
+        ctx.fillStyle = skyGradient;
+      }
+      ctx.fillRect(0, 0, canvas.width, horizonY);
+
+      // Draw stars if nighttime
+      if (!isDay) {
+        stars.forEach((star) => {
+          const twinkle = Math.sin(time * 2 + star.twinklePhase) * 0.5 + 0.5;
+          ctx.globalAlpha = twinkle * 0.8 + 0.2;
+          ctx.fillStyle = '#ffffff';
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.globalAlpha = 1;
+      }
+
+      // Draw sea (bottom half) - gradient
+      const seaGradient = ctx.createLinearGradient(0, horizonY, 0, canvas.height);
+      seaGradient.addColorStop(0, '#1e3a8a');
+      seaGradient.addColorStop(0.5, '#3282b8');
+      seaGradient.addColorStop(1, '#0f4c75');
+      ctx.fillStyle = seaGradient;
+      ctx.fillRect(0, horizonY, canvas.width, canvas.height - horizonY);
+
+      // Draw waves (adjusted to bottom half)
       waves.forEach((wave, index) => {
         ctx.beginPath();
         ctx.strokeStyle = wave.color;
@@ -88,7 +142,7 @@ export function SeaBackground() {
         ctx.globalAlpha = 0.6 - index * 0.1;
 
         for (let x = 0; x <= canvas.width; x += 2) {
-          const y = canvas.height * 0.7 + 
+          const y = horizonY + (canvas.height - horizonY) * 0.4 + 
             Math.sin(x * wave.frequency + time * wave.speed + wave.phase) * wave.amplitude;
           
           if (x === 0) {
