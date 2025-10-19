@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Group, TextInput, ActionIcon, Paper } from '@mantine/core';
-import { IconMicrophone, IconMicrophoneOff, IconBrandGithubCopilot, IconActivity } from '@tabler/icons-react';
+import { IconMicrophone, IconMicrophoneOff, IconBrandGithubCopilot, IconActivity, IconLoader2 } from '@tabler/icons-react';
 import { useVoice } from '@/hooks/useVoice';
 import { useSettings } from '@/contexts/SettingsContext';
 import { t } from '@/lib/i18n';
@@ -13,6 +13,7 @@ interface FloatingInputBarProps {
   onTranscription: (text: string) => void;
   onStopAudio?: () => void;
   isAISpeaking: boolean;
+  isLLMProcessing: boolean;
   isActivityCollapsed: boolean;
   onToggleActivity: () => void;
 }
@@ -22,6 +23,7 @@ export function FloatingInputBar({
   onTranscription,
   onStopAudio,
   isAISpeaking,
+  isLLMProcessing,
   isActivityCollapsed,
   onToggleActivity
 }: FloatingInputBarProps) {
@@ -91,24 +93,35 @@ export function FloatingInputBar({
         }}
       >
         <Group gap="md" align="center" style={{ width: '100%' }}>
-          {/* AI Speaking Indicator Button */}
+          {/* AI Speaking/Processing Indicator Button */}
           <ActionIcon
             size={isActivityCollapsed ? 'xl' : 'lg'}
             radius="xl"
-            variant={isAISpeaking ? 'filled' : 'light'}
-            color={isAISpeaking ? 'green' : 'gray'}
+            variant={isAISpeaking || isLLMProcessing ? 'filled' : 'light'}
+            color={isAISpeaking ? 'green' : isLLMProcessing ? 'blue' : 'gray'}
             onClick={onStopAudio}
             style={{
               minWidth: isActivityCollapsed ? '48px' : '42px',
               minHeight: isActivityCollapsed ? '48px' : '42px',
               boxShadow: isAISpeaking 
-                ? '0 0 20px rgba(34, 139, 230, 0.4)' 
+                ? '0 0 20px rgba(52, 211, 153, 0.5)' 
+                : isLLMProcessing
+                ? '0 0 20px rgba(34, 139, 230, 0.4)'
                 : '0 4px 12px rgba(0, 0, 0, 0.1)',
               animation: isAISpeaking ? 'pulse 2s ease-in-out infinite' : 'none',
-              transition: 'min-width 0.3s ease-in-out, min-height 0.3s ease-in-out',
+              transition: 'min-width 0.3s ease-in-out, min-height 0.3s ease-in-out, box-shadow 0.3s ease-in-out',
             }}
           >
-            <IconBrandGithubCopilot size={isActivityCollapsed ? 24 : 20} />
+            {isLLMProcessing && !isAISpeaking ? (
+              <IconLoader2 
+                size={isActivityCollapsed ? 24 : 20}
+                style={{
+                  animation: 'spin 1s linear infinite',
+                }}
+              />
+            ) : (
+              <IconBrandGithubCopilot size={isActivityCollapsed ? 24 : 20} />
+            )}
           </ActionIcon>
 
           {/* Microphone Button */}

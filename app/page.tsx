@@ -17,22 +17,22 @@ export default function HomePage() {
   const { enqueueSentence, stopAll, isPlaying } = useStreamingVoice();
   
   // Pass enqueueSentence callback to chat for sentence-by-sentence TTS
-  const { messages, sendMessage } = useChat(enqueueSentence);
+  const { messages, sendMessage, isLoading: isLLMProcessing } = useChat(enqueueSentence);
   
   const [isActivityCollapsed, setIsActivityCollapsed] = useState(true);
 
-  const handleSendMessage = (message: string) => {
+  const handleSendMessage = (message: string, isVoiceInput: boolean = false) => {
     sendMessage(message);
-    // Auto-open activity bar when message is sent
-    if (isActivityCollapsed) {
+    // Auto-open activity bar only for text messages, not voice
+    if (!isVoiceInput && isActivityCollapsed) {
       setIsActivityCollapsed(false);
     }
   };
 
   const handleTranscription = (text: string) => {
-    // Send the transcribed text to the LLM
+    // Send the transcribed text to the LLM (mark as voice input)
     if (text.trim()) {
-      handleSendMessage(text);
+      handleSendMessage(text, true);
     }
   };
 
@@ -102,6 +102,7 @@ export default function HomePage() {
         onTranscription={handleTranscription}
         onStopAudio={handleStopAudio}
         isAISpeaking={isPlaying}
+        isLLMProcessing={isLLMProcessing}
         isActivityCollapsed={isActivityCollapsed}
         onToggleActivity={() => setIsActivityCollapsed(!isActivityCollapsed)}
       />
