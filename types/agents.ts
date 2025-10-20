@@ -12,6 +12,7 @@ export interface AgentContext {
   language: string;
   userRole: UserRole;
   conversationHistory: AgentMessage[];
+  screenshotUrl?: string; // Optional screenshot URL for vision context
 }
 
 export interface DashboardContext {
@@ -29,59 +30,16 @@ export interface VisualData {
   data: Record<string, any>[];
 }
 
-export interface ReaderOutput {
-  context: DashboardContext;
-  extractedMetrics: Record<string, number | string>;
-  relevantDataPoints: string[];
+// New simplified response structure
+export interface FrontendIntent {
+  action: string;
+  parameters?: Record<string, any>;
+  targetComponent?: string;
+  confidence?: number;
 }
 
-export interface AnalystOutput {
-  trends: Trend[];
-  comparisons: Comparison[];
-  anomalies: Anomaly[];
-  insights: string[];
+export interface AgentResponse {
+  chatResponse: string;
+  frontendIntent: FrontendIntent;
+  language: string;
 }
-
-export interface Trend {
-  metric: string;
-  direction: 'up' | 'down' | 'stable';
-  percentageChange: number;
-  period: string;
-}
-
-export interface Comparison {
-  metric: string;
-  current: number;
-  previous: number;
-  difference: number;
-  context: string;
-}
-
-export interface Anomaly {
-  metric: string;
-  expected: number;
-  actual: number;
-  severity: 'low' | 'medium' | 'high';
-  description: string;
-}
-
-export interface PresenterOutput {
-  summary: string;
-  keyFindings: string[];
-  recommendations: string[];
-  actionItems: string[];
-  formattedResponse: string;
-}
-
-export interface OrchestratorResult {
-  response: string;
-  context: DashboardContext;
-  analysis: AnalystOutput;
-  presentation: PresenterOutput;
-  metadata: {
-    processingTime: number;
-    agentsInvoked: string[];
-    language: string;
-  };
-}
-

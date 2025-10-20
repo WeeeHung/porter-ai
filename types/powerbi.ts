@@ -54,3 +54,24 @@ export interface DatasetColumn {
   dataType: string;
 }
 
+// Filter types for PowerBI report control
+export interface PowerBIFilter {
+  $schema: string;
+  target: {
+    table: string;
+    column: string;
+  };
+  filterType: number; // 1 = Basic, 2 = Advanced
+  operator: number; // 0 = None, 1 = Equals, 2 = NotEquals, etc.
+  values: any[];
+  requireSingleSelection?: boolean;
+}
+
+export interface PowerBIReport {
+  id: string;
+  name: string;
+  embedUrl: string;
+  accessToken: string;
+  reportId: string;
+}
+

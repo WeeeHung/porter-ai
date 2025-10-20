@@ -1,0 +1,101 @@
+{
+  "report": {
+    "@odata.context": "https://wabi-south-east-asia-d-primary-redirect.analysis.windows.net/v1.0/myorg/groups/41675240-7b6e-4163-a0ed-52b5c3b13e01/$metadata#reports/$entity",
+    "id": "06bdda3d-459c-4632-8784-d43e6b208aab",
+    "reportType": "PowerBIReport",
+    "name": "dashboard",
+    "webUrl": "https://app.powerbi.com/groups/41675240-7b6e-4163-a0ed-52b5c3b13e01/reports/06bdda3d-459c-4632-8784-d43e6b208aab",
+    "embedUrl": "https://app.powerbi.com/reportEmbed?reportId=06bdda3d-459c-4632-8784-d43e6b208aab&groupId=41675240-7b6e-4163-a0ed-52b5c3b13e01&w=2&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLVNPVVRILUVBU1QtQVNJQS1ELVBSSU1BUlktcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7InVzYWdlTWV0cmljc1ZOZXh0Ijp0cnVlfX0%3d",
+    "isFromPbix": true,
+    "isOwnedByMe": true,
+    "datasetId": "7e4d05d0-7616-42f5-a579-16c1a07bc403",
+    "datasetWorkspaceId": "41675240-7b6e-4163-a0ed-52b5c3b13e01",
+    "users": [],
+    "subscriptions": [],
+    "reportFlags": 0
+  },
+  "pages": [
+    {
+      "name": "e761b1f3833c2539b8ba",
+      "displayName": "Dashboard",
+      "order": 0
+    }
+  ],
+  "page_contents": {
+    "e761b1f3833c2539b8ba": []
+  },
+  "dashboards": [
+    {
+      "id": "2e75e412-f24b-4a2a-aaed-2b59666aa524",
+      "displayName": "dashboard.pbix",
+      "isReadOnly": false,
+      "webUrl": "https://app.powerbi.com/groups/41675240-7b6e-4163-a0ed-52b5c3b13e01/dashboards/2e75e412-f24b-4a2a-aaed-2b59666aa524",
+      "embedUrl": "https://app.powerbi.com/dashboardEmbed?dashboardId=2e75e412-f24b-4a2a-aaed-2b59666aa524&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLVNPVVRILUVBU1QtQVNJQS1ELVBSSU1BUlktcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7fX0%3d",
+      "users": [],
+      "subscriptions": []
+    }
+  ],
+  "dashboard_tiles": {
+    "2e75e412-f24b-4a2a-aaed-2b59666aa524": [
+      {
+        "id": "ef6c71d7-3fea-451c-8052-68fe61cb5f48",
+        "title": "dashboard.pbix",
+        "embedUrl": "https://app.powerbi.com/embed?dashboardId=2e75e412-f24b-4a2a-aaed-2b59666aa524&tileId=ef6c71d7-3fea-451c-8052-68fe61cb5f48&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLVNPVVRILUVBU1QtQVNJQS1ELVBSSU1BUlktcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7fX0%3d",
+        "rowSpan": 0,
+        "colSpan": 0,
+        "reportId": "06bdda3d-459c-4632-8784-d43e6b208aab",
+        "datasetId": "7e4d05d0-7616-42f5-a579-16c1a07bc403"
+      }
+    ]
+  },
+  "tile_details": {
+    "ef6c71d7-3fea-451c-8052-68fe61cb5f48": {
+      "@odata.context": "https://wabi-south-east-asia-d-primary-redirect.analysis.windows.net/v1.0/myorg/groups/41675240-7b6e-4163-a0ed-52b5c3b13e01/$metadata#tiles/$entity",
+      "id": "ef6c71d7-3fea-451c-8052-68fe61cb5f48",
+      "title": "dashboard.pbix",
+      "embedUrl": "https://app.powerbi.com/embed?dashboardId=2e75e412-f24b-4a2a-aaed-2b59666aa524&tileId=ef6c71d7-3fea-451c-8052-68fe61cb5f48&config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLVNPVVRILUVBU1QtQVNJQS1ELVBSSU1BUlktcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7fX0%3d",
+      "rowSpan": 0,
+      "colSpan": 0,
+      "reportId": "06bdda3d-459c-4632-8784-d43e6b208aab",
+      "datasetId": "7e4d05d0-7616-42f5-a579-16c1a07bc403"
+    }
+  },
+  "dataset_info": {
+    "7e4d05d0-7616-42f5-a579-16c1a07bc403": {
+      "@odata.context": "https://wabi-south-east-asia-d-primary-redirect.analysis.windows.net/v1.0/myorg/groups/41675240-7b6e-4163-a0ed-52b5c3b13e01/$metadata#datasets/$entity",
+      "id": "7e4d05d0-7616-42f5-a579-16c1a07bc403",
+      "name": "dashboard",
+      "webUrl": "https://app.powerbi.com/groups/41675240-7b6e-4163-a0ed-52b5c3b13e01/datasets/7e4d05d0-7616-42f5-a579-16c1a07bc403",
+      "addRowsAPIEnabled": false,
+      "configuredBy": "hi@jay-lim.com",
+      "isRefreshable": true,
+      "isEffectiveIdentityRequired": false,
+      "isEffectiveIdentityRolesRequired": false,
+      "isOnPremGatewayRequired": true,
+      "targetStorageMode": "Abf",
+      "createdDate": "2025-10-12T11:57:21.623Z",
+      "createReportEmbedURL": "https://app.powerbi.com/reportEmbed?config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLVNPVVRILUVBU1QtQVNJQS1ELVBSSU1BUlktcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7InVzYWdlTWV0cmljc1ZOZXh0Ijp0cnVlfX0%3d",
+      "qnaEmbedURL": "https://app.powerbi.com/qnaEmbed?config=eyJjbHVzdGVyVXJsIjoiaHR0cHM6Ly9XQUJJLVNPVVRILUVBU1QtQVNJQS1ELVBSSU1BUlktcmVkaXJlY3QuYW5hbHlzaXMud2luZG93cy5uZXQiLCJlbWJlZEZlYXR1cmVzIjp7InVzYWdlTWV0cmljc1ZOZXh0Ijp0cnVlfX0%3d",
+      "upstreamDatasets": [],
+      "users": [],
+      "queryScaleOutSettings": {
+        "autoSyncReadOnlyReplicas": true,
+        "maxReadOnlyReplicas": 0
+      },
+      "datasources": [
+        {
+          "datasourceType": "File",
+          "connectionDetails": {
+            "path": "c:\\users\\jiayi\\desktop\\mock_voyage_calls_bu-straddle_v2_2025-01_to_2025-09.xlsx"
+          },
+          "datasourceId": "3e947955-bcbd-4d85-af51-6046a1f3ed74",
+          "gatewayId": "5ee6aead-ce7a-42bc-9ca1-61168e794f33"
+        }
+      ]
+    }
+  },
+  "tables": [],
+  "tables_detailed": [],
+  "sample_data": null,
+  "filters": null
+}

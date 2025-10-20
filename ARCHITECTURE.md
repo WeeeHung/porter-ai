@@ -41,17 +41,14 @@ Porter AI is an intelligent assistant that combines Power BI analytics with mult
         │               │               │
         ▼               ▼               ▼
 ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  Multi-Agent │ │   Power BI   │ │    Voice     │
+│ Single Agent │ │   Power BI   │ │    Voice     │
 │   System     │ │   Service    │ │   Service    │
 ├──────────────┤ ├──────────────┤ ├──────────────┤
 │              │ │              │ │              │
-│ Orchestrator │ │ • Auth       │ │ • Whisper    │
-│      ↓       │ │ • Client     │ │   (STT)      │
-│   Reader     │ │ • Token Mgmt │ │ • ElevenLabs │
-│      ↓       │ │              │ │   (TTS)      │
-│   Analyst    │ │              │ │              │
-│      ↓       │ │              │ │              │
-│  Presenter   │ │              │ │              │
+│ Main Agent   │ │ • Auth       │ │ • Whisper    │
+│   • Intent   │ │ • Client     │ │   (STT)      │
+│   • Response │ │ • Token Mgmt │ │ • ElevenLabs │
+│   • Streaming│ │              │ │   (TTS)      │
 │              │ │              │ │              │
 └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
        │                │                │
@@ -90,7 +87,7 @@ Porter AI is an intelligent assistant that combines Power BI analytics with mult
 
 #### Chat API (`/api/chat`)
 
-**Purpose**: Process user queries through multi-agent system
+**Purpose**: Process user queries through single unified agent
 
 **Flow**:
 
@@ -98,11 +95,11 @@ Porter AI is an intelligent assistant that combines Power BI analytics with mult
 POST /api/chat
   ├─ Validate request
   ├─ Build agent context
-  ├─ Run orchestrator
-  │   ├─ Reader extracts dashboard data
-  │   ├─ Analyst performs analysis
-  │   └─ Presenter formats response
-  └─ Return formatted response
+  ├─ Run main agent (streaming)
+  │   ├─ Extract user intent
+  │   ├─ Generate chat response
+  │   └─ Stream response chunks
+  └─ Return streaming response
 ```
 
 **Request**:
@@ -111,6 +108,7 @@ POST /api/chat
 {
   "message": "What are the current throughput metrics?",
   "language": "en",
+  "userRole": "frontline_operations",
   "dashboardData": {
     /* current dashboard state */
   },
@@ -120,23 +118,15 @@ POST /api/chat
 }
 ```
 
-**Response**:
+**Response** (Streaming - JSON chunks):
 
 ```json
-{
-  "response": "The current container throughput...",
-  "metadata": {
-    "processingTime": 2500,
-    "agentsInvoked": ["reader", "analyst", "presenter"],
-    "language": "en"
-  },
-  "analysis": {
-    /* trends, comparisons, anomalies */
-  },
-  "presentation": {
-    /* summary, keyFindings, recommendations */
-  }
-}
+// First chunk - Intent
+{ "type": "intent", "data": { "action": "show_chart", "parameters": { "chartType": "throughput" } } }
+
+// Subsequent chunks - Text
+{ "type": "text", "data": "The current container throughput..." }
+{ "type": "text", "data": " is showing steady growth..." }
 ```
 
 #### Power BI API
@@ -168,58 +158,77 @@ POST /api/chat
 
 ### Service Layer
 
-#### Multi-Agent System
+#### Single Agent System
 
-**Architecture**: Sequential agent pipeline with GPT-4
+**Architecture**: Unified intelligent agent with GPT-4
 
 ```typescript
-// Agent Interface
-interface Agent {
-  systemPrompt: string;
-  temperature: number;
-  execute(context: AgentContext): Promise<Output>;
+// Main Agent Interface
+interface AgentResponse {
+  chatResponse: string;
+  frontendIntent: FrontendIntent;
+  language: string;
+}
+
+interface FrontendIntent {
+  action: string;
+  parameters?: Record<string, any>;
+  targetComponent?: string;
+  confidence?: number;
 }
 ```
 
-**Agents**:
+**Main Agent** (`lib/agents/main.ts`):
 
-1. **Reader Agent** (`lib/agents/reader.ts`)
+- **Role**: Unified intelligence for all user requests
+- **Input**: User query + context + role + language
+- **Output**: Chat response + frontend intent
+- **Temperature**: 0.7 (balanced)
 
-   - **Role**: Extract dashboard context
-   - **Input**: User query + dashboard data
-   - **Output**: Structured metrics + relevant data points
-   - **Temperature**: 0.3 (factual, precise)
+**Key Features**:
 
-2. **Analyst Agent** (`lib/agents/analyst.ts`)
+1. **Intent Extraction**: Determines what UI action to take
+2. **Role-Based Responses**: Tailored to user level (top/middle/frontline)
+3. **Multilingual**: Responds in user's language
+4. **Streaming**: Fast time-to-first-token
 
-   - **Role**: Analyze trends and patterns
-   - **Input**: Reader output + user query
-   - **Output**: Trends, comparisons, anomalies, insights
-   - **Temperature**: 0.4 (analytical)
+**Intent Actions**:
 
-3. **Presenter Agent** (`lib/agents/presenter.ts`)
-   - **Role**: Format business-friendly response
-   - **Input**: Analyst output + user query + language
-   - **Output**: Structured presentation with recommendations
-   - **Temperature**: 0.6 (creative communication)
+- `show_report` - Navigate to specific report
+- `filter_data` - Apply dashboard filters
+- `highlight_metric` - Highlight specific KPIs
+- `show_chart` - Focus on visualization
+- `navigate` - Navigate to different view
+- `none` - Conversational only (no UI action)
 
-**Orchestrator** (`lib/agents/orchestrator.ts`):
+**Implementation**:
 
 ```typescript
-async function runOrchestrator(context: AgentContext) {
-  const readerOutput = await runReaderAgent(context);
-  const analystOutput = await runAnalystAgent(context, readerOutput);
-  const presenterOutput = await runPresenterAgent(context, analystOutput);
+async function runMainAgent(context: AgentContext): Promise<AgentResponse> {
+  // Single LLM call extracts intent and generates response
+  const response = await openai.chat.completions.create({
+    model: "gpt-4-turbo-preview",
+    messages: [
+      { role: "system", content: systemPrompt },
+      { role: "user", content: userPrompt },
+    ],
+    temperature: 0.7,
+    response_format: { type: "json_object" },
+  });
 
   return {
-    response: presenterOutput.formattedResponse,
-    context: readerOutput.context,
-    analysis: analystOutput,
-    presentation: presenterOutput,
-    metadata: {
-      /* processing info */
-    },
+    chatResponse: result.chatResponse,
+    frontendIntent: result.frontendIntent,
+    language: result.language,
   };
+}
+
+async function runMainAgentStreaming(
+  context: AgentContext
+): Promise<ReadableStream> {
+  // Streams response with intent extraction
+  // First chunk: Intent
+  // Subsequent chunks: Text
 }
 ```
 
@@ -295,16 +304,21 @@ class PowerBIClient {
    ↓
 3. Question + Dashboard context → /api/chat
    ↓
-4. Orchestrator chains agents:
-   Reader → Analyst → Presenter
+4. Main Agent processes request:
+   • Extracts user intent
+   • Generates response
    ↓
-5. Formatted response returned
+5. Streaming response:
+   • First chunk: Frontend intent (logged)
+   • Text chunks: Chat response (displayed + spoken)
    ↓
 6. Response displayed in chat
    ↓
-7. Optional: Text → Speech synthesis
+7. Text → Speech synthesis (automatic)
    ↓
 8. Audio played to user
+   ↓
+9. Frontend can execute intent action
 ```
 
 ### Dashboard Embedding Flow
@@ -397,32 +411,44 @@ class PowerBIClient {
 
 1. **Token Caching**: Power BI tokens reused for 50 min
 2. **Component Lazy Loading**: Dynamic imports for heavy components
-3. **Agent Parallel Execution**: When possible (future enhancement)
+3. **Streaming Responses**: ✅ Implemented with fast TTFB
 4. **Memoization**: React hooks prevent unnecessary re-renders
+5. **Single Agent**: Simplified architecture reduces complexity
 
 ### Future Optimizations
 
-1. **Streaming Responses**: LLM streaming for faster TTFB
+1. **Intent Execution**: Automatically execute frontend intents
 2. **Edge Functions**: Deploy API routes to edge
 3. **CDN**: Static assets on CDN
 4. **Caching**: Redis for frequently accessed data
+5. **Intent Learning**: Learn from user patterns to improve accuracy
 
 ## Extensibility
 
-### Adding New Agents
+### Extending Main Agent
 
 ```typescript
-// 1. Create agent file
-export async function runNewAgent(context, input) {
-  // Agent logic
+// 1. Add new intent actions in main.ts system prompt
+// Example: Add "export_data" action
+const systemPrompt = `
+Frontend Intent Actions:
+- "show_report": Display specific report
+- "export_data": Export data to CSV (NEW)
+...
+`;
+
+// 2. Update FrontendIntent type if needed
+interface FrontendIntent {
+  action: string; // Can now be "export_data"
+  parameters?: Record<string, any>; // Can include exportFormat, filters, etc.
+  targetComponent?: string;
+  confidence?: number;
 }
 
-// 2. Update orchestrator
-const newAgentOutput = await runNewAgent(context, analystOutput);
-
-// 3. Update types
-interface NewAgentOutput {
-  /* ... */
+// 3. Handle new intent in frontend
+if (intent.action === "export_data") {
+  // Trigger export logic
+  exportToCsv(intent.parameters);
 }
 ```
 
@@ -518,5 +544,5 @@ npm start
 ---
 
 **Last Updated**: October 2025
-**Version**: 1.0.0
+**Version**: 2.0.0 (Single Agent Architecture)
 **Maintainer**: PSA Digital Innovation Team

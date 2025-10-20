@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { AgentMessage } from '@/types/agents';
+import { AgentMessage, FrontendIntent } from '@/types/agents';
 import { useSettings } from '@/contexts/SettingsContext';
+import { captureScreenshot } from '@/lib/utils/screenshot';
 
 export interface ChatMessage {
   id: string;
@@ -10,6 +11,7 @@ export interface ChatMessage {
   content: string;
   timestamp: Date;
   isStreaming?: boolean;
+  intent?: FrontendIntent;
 }
 
 export function useChat(onStreamingSentence?: (sentence: string) => void) {
@@ -18,7 +20,7 @@ export function useChat(onStreamingSentence?: (sentence: string) => void) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const sendMessage = useCallback(async (content: string, dashboardData?: any) => {
+  const sendMessage = useCallback(async (content: string, dashboardData?: any, screenshotUrl?: string) => {
     // Always get the latest settings from context
     const { language: currentLanguage, role: currentRole } = settings;
     const userMessage: ChatMessage = {
@@ -61,6 +63,7 @@ export function useChat(onStreamingSentence?: (sentence: string) => void) {
           userRole: currentRole,
           dashboardData,
           conversationHistory,
+          screenshotUrl,
         }),
       });
 
@@ -78,6 +81,7 @@ export function useChat(onStreamingSentence?: (sentence: string) => void) {
 
       let accumulatedContent = '';
       let sentenceBuffer = '';
+      let frontendIntent: FrontendIntent | undefined;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -91,38 +95,55 @@ export function useChat(onStreamingSentence?: (sentence: string) => void) {
         }
 
         const chunk = decoder.decode(value, { stream: true });
-        accumulatedContent += chunk;
-        sentenceBuffer += chunk;
-
-        // Update the assistant message with accumulated content
-        setMessages((prev) =>
-          prev.map((msg) =>
-            msg.id === assistantMessageId
-              ? { ...msg, content: accumulatedContent }
-              : msg
-          )
-        );
-
-        // Detect sentence boundaries for streaming TTS
-        // Split on periods, question marks, exclamation marks followed by space/newline/end
-        // Supports: English (.!?), Chinese (。！？), Arabic (؟), Hindi (।॥)
-        const sentenceRegex = /[.!?。！？؟।॥]+(?=[\s\n]|$)/g;
-        const matches = [...sentenceBuffer.matchAll(sentenceRegex)];
         
-        if (matches.length > 0) {
-          const lastMatch = matches[matches.length - 1];
-          const endIndex = lastMatch.index! + lastMatch[0].length;
-          
-          // Extract complete sentences
-          const completeSentences = sentenceBuffer.substring(0, endIndex);
-          
-          // Emit complete sentences
-          if (completeSentences.trim() && onStreamingSentence) {
-            onStreamingSentence(completeSentences.trim());
+        // Parse JSON chunks (each line is a JSON object)
+        const lines = chunk.split('\n').filter(line => line.trim());
+        
+        for (const line of lines) {
+          try {
+            const parsed = JSON.parse(line);
+            
+            if (parsed.type === 'text') {
+              // Accumulate text content
+              const textContent = parsed.data;
+              accumulatedContent += textContent;
+              sentenceBuffer += textContent;
+
+              // Update the assistant message with accumulated content
+              setMessages((prev) =>
+                prev.map((msg) =>
+                  msg.id === assistantMessageId
+                    ? { ...msg, content: accumulatedContent }
+                    : msg
+                )
+              );
+
+              // Detect sentence boundaries for streaming TTS
+              // Split on periods, question marks, exclamation marks followed by space/newline/end
+              // Supports: English (.!?), Chinese (。！？), Arabic (؟), Hindi (।॥)
+              const sentenceRegex = /[.!?。！？؟।॥]+(?=[\s\n]|$)/g;
+              const matches = [...sentenceBuffer.matchAll(sentenceRegex)];
+              
+              if (matches.length > 0) {
+                const lastMatch = matches[matches.length - 1];
+                const endIndex = lastMatch.index! + lastMatch[0].length;
+                
+                // Extract complete sentences
+                const completeSentences = sentenceBuffer.substring(0, endIndex);
+                
+                // Emit complete sentences
+                if (completeSentences.trim() && onStreamingSentence) {
+                  onStreamingSentence(completeSentences.trim());
+                }
+                
+                // Keep the incomplete part in buffer
+                sentenceBuffer = sentenceBuffer.substring(endIndex).trimStart();
+              }
+            }
+          } catch (parseError) {
+            // Ignore parse errors for incomplete chunks
+            console.warn('Failed to parse chunk:', line, parseError);
           }
-          
-          // Keep the incomplete part in buffer
-          sentenceBuffer = sentenceBuffer.substring(endIndex).trimStart();
         }
       }
 
@@ -150,12 +171,30 @@ export function useChat(onStreamingSentence?: (sentence: string) => void) {
     setError(null);
   }, []);
 
+  /**
+   * Send a message and automatically capture a screenshot (Base64 data URL)
+   * @param content - The message content
+   * @param dashboardData - Optional dashboard data
+   */
+  const sendMessageWithScreenshot = useCallback(async (
+    content: string,
+    dashboardData?: any,
+  ) => {
+    console.log('Capturing screenshot...');
+    const screenshotUrl = await captureScreenshot() || undefined;
+    if (!screenshotUrl) {
+      console.warn('Failed to capture screenshot, proceeding without it');
+    }
+    console.log("screenshot currently: ", screenshotUrl)
+    return sendMessage(content, dashboardData, screenshotUrl);
+  }, [sendMessage]);
+
   return {
     messages,
     isLoading,
     error,
     sendMessage,
+    sendMessageWithScreenshot,
     clearChat,
   };
 }
-

@@ -11,10 +11,14 @@ export async function POST(request: NextRequest) {
       powerBIConfig.reportId
     );
 
+    console.log('Embed Token:', embedToken);
+
     const report = await client.getReport(
       powerBIConfig.workspaceId,
       powerBIConfig.reportId
     );
+
+    console.log('Report:', report);
 
     return NextResponse.json({
       embedToken: embedToken.token,

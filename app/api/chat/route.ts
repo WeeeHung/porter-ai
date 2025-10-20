@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { runOrchestratorStreaming } from '@/lib/agents/orchestrator';
+import { runMainAgentStreaming } from '@/lib/agents/main';
 import { AgentContext } from '@/types/agents';
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { message, language = 'en', userRole = 'frontline_operations', dashboardData, conversationHistory = [] } = body;
+    const { message, language = 'en', userRole = 'frontline_operations', dashboardData, conversationHistory = [], screenshotUrl } = body;
 
     if (!message) {
       return NextResponse.json(
@@ -21,12 +21,14 @@ export async function POST(request: NextRequest) {
       userRole,
       dashboardData,
       conversationHistory,
+      screenshotUrl,
     };
 
-    // Run multi-agent orchestrator with streaming
-    const stream = await runOrchestratorStreaming(context);
+    // Run single agent with streaming
+    const stream = await runMainAgentStreaming(context);
 
     // Return streaming response
+    // Format: Each line is a JSON object with {type: 'intent'|'text', data: ...}
     return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
@@ -42,4 +44,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
