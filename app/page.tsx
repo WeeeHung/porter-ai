@@ -148,24 +148,6 @@ export default function HomePage() {
             transition: 'width 0.3s ease-in-out, height 0.3s ease-in-out',
           }}
         >
-          {/* Filter Test Button - positioned in top-right corner */}
-          <Button
-            leftSection={<IconFilter size={16} />}
-            onClick={() => setIsFilterModalOpen(true)}
-            style={{
-              position: 'absolute',
-              top: '16px',
-              right: '16px',
-              zIndex: 1000,
-              background: 'rgba(255, 255, 255, 0.9)',
-              backdropFilter: 'blur(10px)',
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-            }}
-            variant="light"
-            size="sm"
-          >
-            Test Filters
-          </Button>
           
           <PowerBIEmbed />
         </Box>

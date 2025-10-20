@@ -4,19 +4,21 @@ An AI-powered assistant for port operations analytics, combining Power BI dashbo
 
 ## Features
 
-- 🤖 **Multi-Agent AI System**: Sophisticated reasoning pipeline with Reader, Analyst, and Presenter agents
+- 🤖 **3-Agent AI Pipeline**: LangChain-powered system with Context Reader, Analyzer, and Consolidator agents
+- 🎯 **Suggested Next Steps**: Each response includes actionable follow-up suggestions
+- 👁️ **Vision Analysis**: Automatic dashboard screenshot analysis with GPT-4o Vision
 - 📊 **Power BI Integration**: Embedded dashboards with automatic token refresh
 - 🎤 **Voice Interaction**: Speech-to-Text and Text-to-Speech with ElevenLabs
-- 🌍 **Multilingual Support**: 6 languages (English, Simplified Chinese, Spanish, Arabic, French, Hindi)
-- 💬 **Intelligent Chat**: Context-aware conversations about port operations data
+- 🌍 **Multilingual Support**: English, Chinese, Malay, Tamil (expandable)
+- 💬 **Intelligent Chat**: Two modes - streaming (fast) and detailed (comprehensive)
 - 🎨 **Modern UI**: Built with Mantine components (no raw divs, no Tailwind)
-- 🔄 **MCP-Ready**: Modular agent architecture for future Model Context Protocol integration
+- 🏢 **Role-Based Responses**: Customized for Top Management, Middle Management, and Frontline Operations
 
 ## Tech Stack
 
 - **Frontend**: Next.js 14+ with App Router, TypeScript
 - **UI Library**: Mantine UI v7
-- **AI**: OpenAI GPT-4 (multi-agent orchestration)
+- **AI**: LangChain + OpenAI GPT-4o (multi-agent orchestration with vision)
 - **Voice**: ElevenLabs (STT/TTS) + OpenAI Whisper
 - **Analytics**: Power BI Embedded with ServicePrincipal authentication
 - **Authentication**: Azure AD via @azure/msal-node
@@ -29,17 +31,18 @@ porter-ai/
 │   ├── layout.tsx                 # Global Mantine provider + layout
 │   ├── page.tsx                   # Main dashboard page
 │   ├── api/
-│   │   ├── chat/route.ts          # Multi-agent LLM endpoint
+│   │   ├── chat/route.ts          # Streaming chat endpoint (single agent)
+│   │   ├── chat-detailed/route.ts # Detailed analysis (3-agent pipeline) ⭐ NEW
 │   │   ├── powerbi/
 │   │   │   ├── token/route.ts     # Generate embed tokens
 │   │   │   └── reports/route.ts   # Fetch report metadata
 │   │   └── voice/
-│   │       ├── transcribe/route.ts # ElevenLabs STT
+│   │       ├── transcribe/route.ts # OpenAI Whisper STT
 │   │       └── speak/route.ts      # ElevenLabs TTS
 │   └── components/
 │       ├── PowerBIEmbed.tsx       # Power BI iframe component
-│       ├── FloatingChat.tsx       # Chat UI with voice button
-│       ├── ChatMessage.tsx        # Message bubbles
+│       ├── FloatingInputBar.tsx   # Chat UI with voice button
+│       ├── ActivityBar.tsx        # Activity indicators
 │       ├── VoiceControl.tsx       # Voice input/output controls
 │       └── LanguageSelector.tsx   # Language switcher
 ├── lib/
@@ -47,10 +50,8 @@ porter-ai/
 │   │   ├── client.ts              # Power BI REST API client
 │   │   └── auth.ts                # Token generation logic
 │   ├── agents/
-│   │   ├── reader.ts              # Reads dashboard context
-│   │   ├── analyst.ts             # Analyzes trends & comparisons
-│   │   ├── presenter.ts           # Formats business insights
-│   │   └── orchestrator.ts        # Chains agents together
+│   │   └── main.ts                # 3-agent pipeline with LangChain ⭐ UPDATED
+│   ├── policy.ts                  # Agent prompts & domain knowledge ⭐ NEW
 │   ├── voice/
 │   │   ├── elevenlabs.ts          # ElevenLabs API wrapper
 │   │   └── audioUtils.ts          # Audio processing helpers
@@ -132,39 +133,74 @@ Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## Multi-Agent Architecture
 
-### Agent Flow
+### 3-Agent Pipeline Flow
 
 ```
-User Query → Orchestrator → Reader → Analyst → Presenter → Response
+User Query + Screenshot
+        ↓
+┌─────────────────────────────────────┐
+│  Agent 1: Context Reader            │
+│  - Vision analysis (GPT-4o)         │
+│  - Extract metrics & trends         │
+│  - Identify user intent             │
+└─────────────────────────────────────┘
+        ↓
+┌─────────────────────────────────────┐
+│  Agent 2: Analyzer                  │
+│  - Analyze patterns & issues        │
+│  - Detect anomalies                 │
+│  - Generate recommendations         │
+└─────────────────────────────────────┘
+        ↓
+┌─────────────────────────────────────┐
+│  Agent 3: Consolidator              │
+│  - Synthesize natural response      │
+│  - Create actionable next steps     │
+│  - Extract frontend intent          │
+└─────────────────────────────────────┘
+        ↓
+Response + Key Insights + Next Steps
 ```
 
-### Agent Responsibilities
+### Agent Details
 
-1. **Reader Agent** (`lib/agents/reader.ts`)
+1. **Context Reader Agent** (`lib/agents/main.ts`)
 
-   - Extracts current dashboard metrics and context
-   - Identifies relevant KPIs and filters
-   - Provides structured data snapshot
+   - Uses GPT-4o Vision for screenshot analysis
+   - Extracts visible metrics, charts, and anomalies
+   - Interprets user intent and urgency level
+   - Output: Structured visual and textual context
 
-2. **Analyst Agent** (`lib/agents/analyst.ts`)
+2. **Analyzer Agent** (`lib/agents/main.ts`)
 
-   - Performs trend analysis and comparisons
-   - Identifies anomalies and patterns
-   - Generates data-driven insights
+   - Analyzes trends against PSA thresholds
+   - Detects operational issues (berth utilization, crane productivity, etc.)
+   - Generates immediate, short-term, and long-term recommendations
+   - Output: Analysis, recommendations, suggested next steps
 
-3. **Presenter Agent** (`lib/agents/presenter.ts`)
-   - Formats insights into business language
-   - Creates actionable recommendations
-   - Aligns with PSA strategic priorities
+3. **Consolidator Agent** (`lib/agents/main.ts`)
+   - Synthesizes all information into natural language
+   - Adjusts tone based on user role (Top/Middle/Frontline)
+   - Creates 3-5 actionable next steps
+   - Extracts frontend intent for UI actions
+   - Output: Final response with key insights and next steps
 
-### MCP Extensibility
+### LangChain Integration
 
-The agent architecture is designed to be MCP-compatible:
+- **Sequential Pipeline**: Agents run in sequence with structured data flow
+- **JSON Output Parsing**: Type-safe agent communication
+- **Vision Support**: Context Reader uses GPT-4o Vision
+- **Efficient Streaming**: Separate streaming endpoint for real-time responses
+- **Error Handling**: Graceful fallbacks for each agent
 
-- Each agent has clear input/output interfaces
-- Uses standard function calling patterns
-- Modular and independently testable
-- Ready for future MCP server integration
+### Domain Knowledge
+
+All agents are configured with PSA-specific knowledge from `lib/policy.ts`:
+
+- **Terminals**: Tuas, Pasir Panjang, Keppel, Brani, Antwerp, Busan
+- **Key Metrics**: TEUs, berth utilization, vessel turnaround time, crane productivity
+- **Issue Thresholds**: Automated detection of operational bottlenecks
+- **Remediation Strategies**: Immediate, short-term, and long-term action plans
 
 ## Power BI Integration
 
@@ -237,7 +273,8 @@ Maritime-inspired color scheme:
 
 ### Chat
 
-- `POST /api/chat` - Send message, receive AI response
+- `POST /api/chat` - Fast streaming responses (single agent)
+- `POST /api/chat-detailed` - Comprehensive analysis (3-agent pipeline) with next steps ⭐ NEW
 
 ### Power BI
 
@@ -246,8 +283,18 @@ Maritime-inspired color scheme:
 
 ### Voice
 
-- `POST /api/voice/transcribe` - Convert speech to text
-- `POST /api/voice/speak` - Convert text to speech
+- `POST /api/voice/transcribe` - Convert speech to text (OpenAI Whisper)
+- `POST /api/voice/speak` - Convert text to speech (ElevenLabs)
+
+### Testing
+
+```bash
+# Test the 3-agent pipeline
+node test-agents.mjs
+
+# Test custom query
+node test-agents.mjs "Are there any bottlenecks today?" middle_management English
+```
 
 ## Development
 
@@ -290,12 +337,22 @@ npm run lint
 - Check i18n.ts for language support
 - Verify translations are complete
 
+## Documentation
+
+- 📘 **[AGENTS_GUIDE.md](AGENTS_GUIDE.md)** - Comprehensive multi-agent system guide
+- 📋 **[MULTI_AGENT_SUMMARY.md](MULTI_AGENT_SUMMARY.md)** - Quick reference and implementation summary
+- 📝 **[POLICY_GUIDE.md](POLICY_GUIDE.md)** - Domain knowledge and policy configuration
+- 🎯 **[QUICKSTART.md](QUICKSTART.md)** - Quick start guide
+
 ## Future Enhancements
 
-- [ ] Streaming LLM responses for better UX
+- [x] ✅ Multi-agent pipeline with LangChain
+- [x] ✅ Vision analysis of dashboards
+- [x] ✅ Suggested next steps feature
+- [ ] Parallel agent execution for better performance
+- [ ] Streaming pipeline (stream from each agent)
 - [ ] Dashboard interaction tracking (clicks, filters)
-- [ ] Advanced analytics and predictive insights
-- [ ] MCP server integration
+- [ ] Advanced predictive analytics
 - [ ] User authentication and personalization
 - [ ] Export conversation history
 - [ ] Mobile responsive optimization

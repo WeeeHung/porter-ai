@@ -42,4 +42,63 @@ export interface AgentResponse {
   chatResponse: string;
   frontendIntent: FrontendIntent;
   language: string;
+  keyInsights?: string[];
+  nextSteps?: NextStep[];
+}
+
+// Multi-Agent Pipeline Types
+export interface ContextReaderOutput {
+  visualContext: {
+    metrics: Array<{ name: string; value: string; trend: 'up' | 'down' | 'stable' }>;
+    charts: Array<{ type: string; title: string; keyInsights: string[] }>;
+    anomalies: string[];
+    timeframe: string;
+  };
+  userIntent: {
+    primaryQuestion: string;
+    specificMetrics: string[];
+    terminals: string[];
+    timeframe: string;
+    urgencyLevel: 'low' | 'medium' | 'high';
+  };
+  contextSummary: string;
+}
+
+export interface AnalyzerOutput {
+  analysis: {
+    keyFindings: string[];
+    trends: string[];
+    issuesDetected: Array<{
+      category: string;
+      severity: 'low' | 'medium' | 'high' | 'critical';
+      description: string;
+      impact: string;
+    }>;
+    benchmarkComparison: string;
+  };
+  recommendations: {
+    immediate: string[];
+    shortTerm: string[];
+    longTerm: string[];
+  };
+  suggestedNextSteps: Array<{
+    action: string;
+    description: string;
+    benefit: string;
+  }>;
+}
+
+export interface NextStep {
+  id: string;
+  action: string;
+  detail: string;
+  category: 'analysis' | 'filter' | 'report' | 'action' | 'comparison';
+}
+
+export interface ConsolidatorOutput {
+  chatResponse: string;
+  keyInsights: string[];
+  nextSteps: NextStep[];
+  frontendIntent: FrontendIntent;
+  language: string;
 }
