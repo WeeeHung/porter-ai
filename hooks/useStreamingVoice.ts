@@ -7,21 +7,30 @@ import { createAudioElement } from '@/lib/voice/audioUtils';
 interface QueuedSentence {
   text: string;
   id: string;
+  index: number;
+}
+
+interface AudioWithIndex {
+  blob: Blob;
+  index: number;
 }
 
 /**
  * Hook for streaming text-to-speech with sentence-level queueing
  * Allows TTS to start playing while LLM is still generating text
+ * Maintains strict order of playback even with parallel synthesis
  */
 export function useStreamingVoice() {
   const { settings } = useSettings();
   const [isPlaying, setIsPlaying] = useState(false);
   const [isSynthesizing, setIsSynthesizing] = useState(false);
   const sentenceQueueRef = useRef<QueuedSentence[]>([]);
-  const audioQueueRef = useRef<Blob[]>([]);
+  const audioMapRef = useRef<Map<number, Blob>>(new Map());
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const isProcessingRef = useRef(false);
   const isStoppedRef = useRef(false);
+  const nextPlayIndexRef = useRef(0);
+  const sentenceCounterRef = useRef(0);
 
   const playAudio = useCallback((audioBlob: Blob): Promise<void> => {
     return new Promise((resolve) => {
@@ -52,7 +61,7 @@ export function useStreamingVoice() {
     });
   }, []);
 
-  // Process queue: synthesize and play with parallel processing
+  // Process queue: synthesize and play with strict ordering
   const processSentenceQueue = useCallback(async () => {
     if (isProcessingRef.current || isStoppedRef.current) return;
     isProcessingRef.current = true;
@@ -91,9 +100,9 @@ export function useStreamingVoice() {
           }
           
           if (!isStoppedRef.current && chunks.length > 0) {
-            // Convert Uint8Array chunks to Blob
+            // Convert Uint8Array chunks to Blob and store with index
             const audioBlob = new Blob(chunks as BlobPart[], { type: 'audio/mpeg' });
-            audioQueueRef.current.push(audioBlob);
+            audioMapRef.current.set(sentence.index, audioBlob);
           }
         }
       } catch (error) {
@@ -103,7 +112,7 @@ export function useStreamingVoice() {
       }
     };
 
-    while (!isStoppedRef.current && (sentenceQueueRef.current.length > 0 || audioQueueRef.current.length > 0 || activeSynthesis.size > 0)) {
+    while (!isStoppedRef.current && (sentenceQueueRef.current.length > 0 || audioMapRef.current.size > 0 || activeSynthesis.size > 0)) {
       // Launch parallel synthesis requests (up to 3 at once)
       while (sentenceQueueRef.current.length > 0 && activeSynthesis.size < 3 && !isStoppedRef.current) {
         const sentence = sentenceQueueRef.current.shift()!;
@@ -114,12 +123,14 @@ export function useStreamingVoice() {
         promise.finally(() => activeSynthesis.delete(promise));
       }
 
-      // Play audio while synthesis is happening in parallel
-      if (audioQueueRef.current.length > 0 && !currentAudioRef.current && !isStoppedRef.current) {
-        const audioBlob = audioQueueRef.current.shift()!;
+      // Play audio in strict order - only play if the next expected index is ready
+      if (audioMapRef.current.has(nextPlayIndexRef.current) && !currentAudioRef.current && !isStoppedRef.current) {
+        const audioBlob = audioMapRef.current.get(nextPlayIndexRef.current)!;
+        audioMapRef.current.delete(nextPlayIndexRef.current);
+        nextPlayIndexRef.current++;
         await playAudio(audioBlob);
       } else {
-        // Short wait only if no audio to play
+        // Short wait if the next audio in sequence isn't ready yet
         await new Promise(resolve => setTimeout(resolve, 50));
       }
     }
@@ -137,28 +148,36 @@ export function useStreamingVoice() {
   const enqueueSentence = useCallback((text: string) => {
     if (isStoppedRef.current) return;
     
-    const sentence: QueuedSentence = {
-      text: text.trim(),
-      id: Date.now().toString() + Math.random(),
-    };
+    // Split text into individual sentences to ensure proper ordering
+    // Supports: English (.!?), Chinese (。！？), Arabic (؟), Hindi (।॥)
+    const sentenceRegex = /[^.!?。！？؟।॥]+[.!?。！？؟।॥]+/g;
+    const sentences = text.match(sentenceRegex) || [text];
     
-    // Only add non-empty sentences
-    if (sentence.text) {
-      sentenceQueueRef.current.push(sentence);
-      
-      // Start processing if not already processing
-      if (!isProcessingRef.current) {
-        processSentenceQueue();
+    // Add each sentence individually with its own index
+    sentences.forEach((sentenceText) => {
+      const trimmedText = sentenceText.trim();
+      if (trimmedText) {
+        const sentence: QueuedSentence = {
+          text: trimmedText,
+          id: Date.now().toString() + Math.random(),
+          index: sentenceCounterRef.current++,
+        };
+        sentenceQueueRef.current.push(sentence);
       }
+    });
+    
+    // Start processing if not already processing
+    if (!isProcessingRef.current && sentenceQueueRef.current.length > 0) {
+      processSentenceQueue();
     }
   }, [processSentenceQueue]);
 
   const stopAll = useCallback(() => {
     isStoppedRef.current = true;
     
-    // Clear queues
+    // Clear queues and maps
     sentenceQueueRef.current = [];
-    audioQueueRef.current = [];
+    audioMapRef.current.clear();
     
     // Stop current audio
     if (currentAudioRef.current) {
@@ -171,9 +190,11 @@ export function useStreamingVoice() {
     setIsPlaying(false);
     setIsSynthesizing(false);
     
-    // Reset stop flag after a brief delay
+    // Reset counters and stop flag after a brief delay
     setTimeout(() => {
       isStoppedRef.current = false;
+      nextPlayIndexRef.current = 0;
+      sentenceCounterRef.current = 0;
     }, 100);
   }, []);
 

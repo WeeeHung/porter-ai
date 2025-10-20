@@ -10,7 +10,7 @@ interface VoiceControlProps {
 }
 
 export function VoiceControl({ language, onTranscription }: VoiceControlProps) {
-  const { isRecording, isTranscribing, startRecording, stopRecording } = useVoice(language);
+  const { isRecording, isTranscribing, startRecording, stopRecording } = useVoice();
 
   const handleMicClick = async () => {
     if (isRecording) {
